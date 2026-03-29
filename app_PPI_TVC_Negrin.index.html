@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Estudio PPI-TVC — Negrín</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow-x: hidden; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; }
+.app { max-width: 480px; margin: 0 auto; padding: 12px; padding-bottom: 60px; }
+.header { background: #185FA5; color: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+.header h1 { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+.header p { font-size: 12px; opacity: 0.8; }
+.progress { display: flex; gap: 6px; margin-bottom: 16px; }
+.step-dot { flex: 1; height: 5px; border-radius: 3px; background: #d0d7de; transition: background 0.2s; }
+.step-dot.active { background: #185FA5; }
+.step-dot.done { background: #1D9E75; }
+.card { background: white; border: 1px solid #e1e5ea; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.card-title { font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; color: #374151; margin-bottom: 6px; font-weight: 500; }
+.field input, .field select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; background: white; color: #111827; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
+.field input:focus, .field select:focus { outline: none; border-color: #185FA5; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.calc-box { background: #f8fafc; border: 1px solid #e1e5ea; border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
+.calc-label { font-size: 11px; color: #6b7280; margin-bottom: 3px; font-weight: 500; }
+.calc-value { font-size: 20px; font-weight: 600; color: #111827; }
+.calc-value.good { color: #1D9E75; }
+.calc-value.warn { color: #BA7517; }
+.calc-value.bad { color: #E24B4A; }
+.btn { width: 100%; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; margin-top: 8px; -webkit-appearance: none; appearance: none; touch-action: manipulation; user-select: none; display: block; text-align: center; }
+.btn:active { opacity: 0.75; }
+.btn-primary { background: #185FA5; color: white; }
+.btn-secondary { background: white; color: #374151; border: 1px solid #d1d5db; }
+.btn-success { background: #1D9E75; color: white; }
+.btn-export { background: #27500A; color: white; }
+.btn-danger { background: #E24B4A; color: white; }
+.tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 8px; }
+.tag-resp { background: #EAF3DE; color: #27500A; }
+.tag-noresp { background: #FCEBEB; color: #791F1F; }
+.section-step { display: none; }
+.section-step.visible { display: block; }
+.patient-item { background: #f8fafc; border: 1px solid #e1e5ea; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+.patient-item .pid { font-size: 14px; font-weight: 600; color: #111827; }
+.patient-item .pinfo { font-size: 12px; color: #6b7280; margin-top: 3px; line-height: 1.5; }
+.cat-badge { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; line-height: 1.5; }
+.alert-info { background: #EEF6FF; color: #1e3a5f; border: 1px solid #bfdbfe; }
+.alert-warn { background: #FFFBEB; color: #78350f; border: 1px solid #fde68a; }
+.main-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.stat-box { background: white; border: 1px solid #e1e5ea; border-radius: 10px; padding: 10px; text-align: center; }
+.stat-box .snum { font-size: 22px; font-weight: 700; color: #185FA5; }
+.stat-box .slabel { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.version { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <h1>Estudio PPI-TVC — Negrín</h1>
+  <p>UCI Postquirúrgica · H.U. Gran Canaria Doctor Negrín</p>
+</div>
+<div class="progress">
+  <div class="step-dot" id="dot0"></div>
+  <div class="step-dot" id="dot1"></div>
+  <div class="step-dot" id="dot2"></div>
+  <div class="step-dot" id="dot3"></div>
+  <div class="step-dot" id="dot4"></div>
+</div>
+
+<!-- PASO 0 -->
+<div class="section-step" id="step0">
+  <div class="main-stats">
+    <div class="stat-box"><div class="snum" id="stat-total">0</div><div class="slabel">Pacientes</div></div>
+    <div class="stat-box"><div class="snum" id="stat-resp" style="color:#1D9E75">0</div><div class="slabel">Respondedores</div></div>
+    <div class="stat-box"><div class="snum" id="stat-intol" style="color:#E24B4A">0</div><div class="slabel">Intolerantes</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Acciones</div>
+    <button class="btn btn-primary" id="btn-nuevo">+ Nuevo paciente</button>
+    <button class="btn btn-export" style="margin-top:8px" id="btn-export">Exportar a Excel</button>
+    <button class="btn btn-secondary" style="margin-top:8px" id="btn-lista">Ver / ocultar lista</button>
+    <button class="btn btn-danger" style="margin-top:16px;font-size:13px;padding:10px" id="btn-borrar">Borrar todos los datos</button>
+  </div>
+  <div id="patient-list-section" style="display:none">
+    <div class="card">
+      <div class="card-title">Pacientes registrados</div>
+      <div id="patient-list"></div>
+    </div>
+  </div>
+  <div class="version">v1.1 · S. López Ruiz, L. Valencia Sola, R. Vega Rodríguez</div>
+</div>
+
+<!-- PASO 1 -->
+<div class="section-step" id="step1">
+  <div class="card">
+    <div class="card-title">Paso 1 de 4 — Identificación</div>
+    <div class="field"><label>Código de paciente *</label><input type="text" id="codigo" placeholder="Ej: PAC-001"></div>
+    <div class="row2">
+      <div class="field"><label>Edad (años)</label><input type="number" id="edad" placeholder="65" inputmode="numeric"></div>
+      <div class="field"><label>Sexo</label><select id="sexo"><option value="">—</option><option value="H">Hombre</option><option value="M">Mujer</option></select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Peso real (kg)</label><input type="number" id="peso" placeholder="70" step="0.1" inputmode="decimal"></div>
+      <div class="field"><label>Altura (cm)</label><input type="number" id="altura" placeholder="170" inputmode="numeric"></div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-label">Peso corporal predicho (Devine)</div>
+      <div class="calc-value" id="pcp-val">— kg</div>
+    </div>
+    <div class="field" style="margin-top:14px"><label>Diagnóstico / cirugía</label><input type="text" id="diagnostico" placeholder="Ej: laparotomía exploradora"></div>
+    <div class="row2">
+      <div class="field"><label>APACHE II</label><input type="number" id="apache" placeholder="18" inputmode="numeric"></div>
+      <div class="field"><label>SOFA</label><input type="number" id="sofa" placeholder="8" inputmode="numeric"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Balance hídrico (ml)</label><input type="number" id="balance" placeholder="1200" inputmode="numeric"></div>
+      <div class="field"><label>CVC</label><select id="cvc"><option value="">—</option><option value="Si">Sí</option><option value="No">No</option></select></div>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-1-next">Siguiente — T0 Basal</button>
+  <button class="btn btn-secondary" style="margin-top:8px" id="btn-1-back">Cancelar</button>
+</div>
+
+<!-- PASO 2 -->
+<div class="section-step" id="step2">
+  <div class="alert alert-info">T0 Basal — antes del TVC. Paciente estable con Vt a 6 ml/kg.</div>
+  <div class="card">
+    <div class="card-title">Hemodinámicos basales</div>
+    <div class="row2">
+      <div class="field"><label>PAM (mmHg)</label><input type="number" id="pam_t0" placeholder="75" inputmode="numeric"></div>
+      <div class="field"><label>FC (lpm)</label><input type="number" id="fc_t0" placeholder="85" inputmode="numeric"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>VPP basal (%)</label><input type="number" id="vpp_t0" placeholder="9" step="0.1" inputmode="decimal"></div>
+      <div class="field"><label>PVC (mmHg)</label><input type="number" id="pvc_t0" placeholder="8" inputmode="numeric"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Ventilación basal (Vt 6 ml/kg)</div>
+    <div class="row2">
+      <div class="field"><label>PEEP (cmH2O)</label><input type="number" id="peep_t0" placeholder="5" inputmode="numeric"></div>
+      <div class="field"><label>FiO2</label><input type="number" id="fio2_t0" placeholder="0.4" step="0.05" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Pr. plateau (cmH2O)</label><input type="number" id="plateau_t0" placeholder="22" inputmode="numeric"></div>
+      <div class="field"><label>Driving pressure</label><input type="number" id="dp_t0" placeholder="16" inputmode="numeric"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">PPI portal basal</div>
+    <div class="row2">
+      <div class="field"><label>Vmáx (cm/s)</label><input type="number" id="vmax_t0" placeholder="25" step="0.1" inputmode="decimal"></div>
+      <div class="field"><label>Vmín (cm/s)</label><input type="number" id="vmin_t0" placeholder="18" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-label">PPI basal = (Vmáx − Vmín) / Vmáx × 100</div>
+      <div class="calc-value" id="ppi_t0_val">— %</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">VExUS basal</div>
+    <div class="field"><label>Diámetro VCI espiración (cm)</label><input type="number" id="vci_t0" placeholder="1.8" step="0.1" inputmode="decimal"></div>
+    <div class="field"><label>Patrón venas hepáticas</label>
+      <select id="vh_t0"><option value="">—</option><option value="Normal">Normal (S &gt; D)</option><option value="Embotado">Embotado (S ≈ D)</option><option value="Invertido">Invertido (S &lt; D)</option></select>
+    </div>
+    <div class="field"><label>Patrón venas renales</label>
+      <select id="vr_t0"><option value="">—</option><option value="Monofasico">Monofásico continuo</option><option value="Bifasico">Bifásico</option><option value="Discontinuo">Discontinuo</option></select>
+    </div>
+    <div class="field"><label>Grado VExUS basal</label>
+      <select id="vexus_t0"><option value="">—</option><option value="0">Grado 0</option><option value="1">Grado 1</option><option value="2">Grado 2</option><option value="3">Grado 3</option></select>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Ecocardiografía basal</div>
+    <div class="row2">
+      <div class="field"><label>TAPSE (mm)</label><input type="number" id="tapse_t0" placeholder="20" inputmode="numeric"></div>
+      <div class="field"><label>S' tricusp. (cm/s)</label><input type="number" id="s_t0" placeholder="12" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>FEVI estimada (%)</label><input type="number" id="fevi_t0" placeholder="60" inputmode="numeric"></div>
+      <div class="field"><label>VTI TSVI (cm)</label><input type="number" id="vti_t0" placeholder="18" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="field"><label>E/E'</label><input type="number" id="ee_t0" placeholder="9" step="0.1" inputmode="decimal"></div>
+  </div>
+  <button class="btn btn-primary" id="btn-2-next">Siguiente — T1 TVC</button>
+  <button class="btn btn-secondary" style="margin-top:8px" id="btn-2-back">Atrás</button>
+</div>
+
+<!-- PASO 3 -->
+<div class="section-step" id="step3">
+  <div class="alert alert-warn">T1 TVC — Vt aumentado a 8 ml/kg. Medir al segundo 45-60.</div>
+  <div class="card">
+    <div class="card-title">Ventilación con Vt 8 ml/kg</div>
+    <div class="row2">
+      <div class="field"><label>Pr. plateau (cmH2O)</label><input type="number" id="plateau_t1" placeholder="26" inputmode="numeric"></div>
+      <div class="field"><label>Driving pressure</label><input type="number" id="dp_t1" placeholder="19" inputmode="numeric"></div>
+    </div>
+    <div class="alert alert-info" style="margin-top:4px;font-size:12px">Si plateau &gt; 30 o DP &gt; 15: detener el TVC y excluir al paciente.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">VPP durante TVC</div>
+    <div class="field"><label>VPP durante TVC (%)</label><input type="number" id="vpp_t1" placeholder="12" step="0.1" inputmode="decimal"></div>
+    <div class="calc-box">
+      <div class="calc-label">Delta VPP = VPP TVC − VPP basal  (respondedor si ≥ +3,5 pts)</div>
+      <div class="calc-value" id="delta_vpp_val">— puntos</div>
+    </div>
+    <div id="resp_tag"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">PPI portal durante TVC — variable principal</div>
+    <div class="row2">
+      <div class="field"><label>Vmáx (cm/s)</label><input type="number" id="vmax_t1" placeholder="28" step="0.1" inputmode="decimal"></div>
+      <div class="field"><label>Vmín (cm/s)</label><input type="number" id="vmin_t1" placeholder="15" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-label">PPI durante TVC</div>
+      <div class="calc-value" id="ppi_t1_val">— %</div>
+    </div>
+    <div class="calc-box" style="margin-top:8px;border-color:#185FA5">
+      <div class="calc-label" style="color:#185FA5;font-weight:700">DELTA PPI TVC (variable principal)</div>
+      <div class="calc-value" id="delta_ppi_val">— puntos</div>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-3-next">Siguiente — T2 Post-carga</button>
+  <button class="btn btn-secondary" style="margin-top:8px" id="btn-3-back">Atrás</button>
+</div>
+
+<!-- PASO 4 -->
+<div class="section-step" id="step4">
+  <div class="alert alert-info">T2 Post-carga — tras 250 ml en 15 min. Vt de nuevo a 6 ml/kg.</div>
+  <div class="card">
+    <div class="card-title">Hemodinámicos post-carga</div>
+    <div class="row2">
+      <div class="field"><label>PAM (mmHg)</label><input type="number" id="pam_t2" placeholder="80" inputmode="numeric"></div>
+      <div class="field"><label>VPP post-carga (%)</label><input type="number" id="vpp_t2" placeholder="7" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="field"><label>PVC post-carga (mmHg)</label><input type="number" id="pvc_t2" placeholder="10" inputmode="numeric"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">VTI TSVI post-carga</div>
+    <div class="field"><label>VTI TSVI post-carga (cm)</label><input type="number" id="vti_t2" placeholder="20" step="0.1" inputmode="decimal"></div>
+    <div class="calc-box">
+      <div class="calc-label">Delta VTI = (post − basal) / basal × 100</div>
+      <div class="calc-value" id="delta_vti_val">— %</div>
+    </div>
+    <div id="resp_confirm_tag"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">PPI portal post-carga</div>
+    <div class="row2">
+      <div class="field"><label>Vmáx (cm/s)</label><input type="number" id="vmax_t2" placeholder="30" step="0.1" inputmode="decimal"></div>
+      <div class="field"><label>Vmín (cm/s)</label><input type="number" id="vmin_t2" placeholder="10" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-label">PPI post-carga</div>
+      <div class="calc-value" id="ppi_t2_val">— %</div>
+    </div>
+    <div class="calc-box" style="margin-top:8px">
+      <div class="calc-label">Delta PPI post-carga (post − basal)</div>
+      <div class="calc-value" id="delta_ppi_post_val">— puntos</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">VExUS post-carga</div>
+    <div class="field"><label>Diámetro VCI espiración (cm)</label><input type="number" id="vci_t2" placeholder="2.2" step="0.1" inputmode="decimal"></div>
+    <div class="field"><label>Patrón venas hepáticas</label>
+      <select id="vh_t2"><option value="">—</option><option value="Normal">Normal</option><option value="Embotado">Embotado</option><option value="Invertido">Invertido</option></select>
+    </div>
+    <div class="field"><label>Patrón venas renales</label>
+      <select id="vr_t2"><option value="">—</option><option value="Monofasico">Monofásico</option><option value="Bifasico">Bifásico</option><option value="Discontinuo">Discontinuo</option></select>
+    </div>
+    <div class="field"><label>Grado VExUS post-carga</label>
+      <select id="vexus_t2"><option value="">—</option><option value="0">Grado 0</option><option value="1">Grado 1</option><option value="2">Grado 2</option><option value="3">Grado 3</option></select>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Clasificación final del paciente</div>
+    <div id="clasificacion-final" style="font-size:13px;color:#6b7280">Completa los datos para ver la clasificación.</div>
+  </div>
+  <button class="btn btn-success" id="btn-guardar">Guardar paciente</button>
+  <button class="btn btn-secondary" style="margin-top:8px" id="btn-4-back">Atrás</button>
+</div>
+
+</div>
+<script>
+var patients = [];
+var cur = {};
+
+function loadData() {
+  try { var s = localStorage.getItem('ppi_tvc_v1'); if (s) patients = JSON.parse(s); } catch(e) {}
+}
+function saveData() {
+  try { localStorage.setItem('ppi_tvc_v1', JSON.stringify(patients)); } catch(e) {}
+}
+function g(id) { return document.getElementById(id); }
+function v(id) { var el = g(id); return el ? el.value : ''; }
+function txt(id, t) { var el = g(id); if (el) el.textContent = t; }
+function htm(id, h) { var el = g(id); if (el) el.innerHTML = h; }
+
+function goTo(step) {
+  for (var i = 0; i <= 4; i++) {
+    var s = g('step' + i); var d = g('dot' + i);
+    if (s) s.className = 'section-step' + (i === step ? ' visible' : '');
+    if (d) { d.className = 'step-dot'; if (i === step) d.className += ' active'; else if (i < step) d.className += ' done'; }
+  }
+  window.scrollTo(0, 0);
+  if (step === 0) updateStats();
+}
+
+function updateStats() {
+  txt('stat-total', patients.length);
+  txt('stat-resp', patients.filter(function(p){ return p.respondedor === 'Si'; }).length);
+  txt('stat-intol', patients.filter(function(p){ return p.intolerante === 'Si'; }).length);
+}
+
+function calcPCP() {
+  var peso = parseFloat(v('peso')), altura = parseFloat(v('altura')), sexo = v('sexo');
+  if (!altura || !sexo) return;
+  var pcp = sexo === 'H' ? 50 + 0.91 * (altura - 152.4) : 45.5 + 0.91 * (altura - 152.4);
+  txt('pcp-val', pcp.toFixed(1) + ' kg'); cur.pcp = pcp.toFixed(1);
+}
+
+function calcPPI(t) {
+  var vmax = parseFloat(v('vmax_' + t)), vmin = parseFloat(v('vmin_' + t));
+  if (!vmax || isNaN(vmin) || vmax === 0) return;
+  var ppi = (vmax - vmin) / vmax * 100;
+  txt('ppi_' + t + '_val', ppi.toFixed(1) + ' %'); cur['ppi_' + t] = ppi.toFixed(1);
+  if (t === 't1') calcDeltaPPI();
+  if (t === 't2') { calcDeltaPPIPost(); calcClasificacion(); }
+}
+
+function calcDeltaVPP() {
+  var v0 = parseFloat(v('vpp_t0')), v1 = parseFloat(v('vpp_t1'));
+  if (isNaN(v0) || isNaN(v1)) return;
+  var delta = v1 - v0;
+  var el = g('delta_vpp_val');
+  if (el) { el.textContent = (delta > 0 ? '+' : '') + delta.toFixed(1) + ' puntos'; el.className = 'calc-value ' + (delta >= 3.5 ? 'good' : 'warn'); }
+  cur.delta_vpp = delta.toFixed(1);
+  var tag = g('resp_tag'); if (!tag) return;
+  if (delta >= 3.5) { tag.innerHTML = '<span class="tag tag-resp">Respondedor (subida VPP +' + delta.toFixed(1) + ' pts)</span>'; cur.respondedor = 'Si'; }
+  else { tag.innerHTML = '<span class="tag tag-noresp">No respondedor (delta ' + delta.toFixed(1) + ' pts)</span>'; cur.respondedor = 'No'; }
+}
+
+function calcDeltaPPI() {
+  var p0 = parseFloat(cur.ppi_t0), p1 = parseFloat(cur.ppi_t1);
+  if (isNaN(p0) || isNaN(p1)) return;
+  var delta = p1 - p0;
+  var el = g('delta_ppi_val');
+  if (el) { el.textContent = (delta > 0 ? '+' : '') + delta.toFixed(1) + ' puntos'; el.className = 'calc-value ' + (delta > 10 ? 'warn' : 'good'); }
+  cur.delta_ppi_tvc = delta.toFixed(1);
+}
+
+function calcDeltaVTI() {
+  var v0 = parseFloat(v('vti_t0')), v2 = parseFloat(v('vti_t2'));
+  if (isNaN(v0) || isNaN(v2) || v0 === 0) return;
+  var delta = (v2 - v0) / v0 * 100;
+  var el = g('delta_vti_val');
+  if (el) { el.textContent = (delta > 0 ? '+' : '') + delta.toFixed(1) + ' %'; el.className = 'calc-value ' + (delta >= 10 ? 'good' : 'warn'); }
+  cur.delta_vti = delta.toFixed(1);
+  var tag = g('resp_confirm_tag'); if (!tag) return;
+  tag.innerHTML = delta >= 10 ? '<span class="tag tag-resp">Confirmado respondedor (VTI +' + delta.toFixed(1) + '%)</span>' : '<span class="tag tag-noresp">No confirmado (VTI ' + delta.toFixed(1) + '%)</span>';
+}
+
+function calcDeltaPPIPost() {
+  var p0 = parseFloat(cur.ppi_t0), p2 = parseFloat(cur.ppi_t2);
+  if (isNaN(p0) || isNaN(p2)) return;
+  var delta = p2 - p0;
+  var el = g('delta_ppi_post_val');
+  if (el) { el.textContent = (delta > 0 ? '+' : '') + delta.toFixed(1) + ' puntos'; el.className = 'calc-value ' + (delta > 10 ? 'bad' : 'good'); }
+  cur.delta_ppi_post = delta.toFixed(1);
+}
+
+function calcClasificacion() {
+  var vx2 = parseInt(v('vexus_t2')), vx0 = parseInt(v('vexus_t0'));
+  var dPost = parseFloat(cur.delta_ppi_post), resp = cur.respondedor;
+  var intol = false, razones = [];
+  if (!isNaN(vx2) && !isNaN(vx0) && vx2 >= 2 && vx2 > vx0) { intol = true; razones.push('VExUS grado ' + vx2 + ' de novo'); }
+  if (!isNaN(dPost) && dPost > 10) { intol = true; razones.push('Delta PPI post +' + dPost.toFixed(1) + ' pts'); }
+  cur.intolerante = intol ? 'Si' : 'No';
+  var cat = (resp === 'Si' ? 'R' : 'NR') + '-' + (intol ? 'I' : 'T');
+  cur.categoria = cat;
+  var colors = {'R-T':'#EAF3DE','R-I':'#FFE6CC','NR-T':'#FFF9C4','NR-I':'#FCEBEB'};
+  var texts = {'R-T':'Respondedor tolerante','R-I':'Respondedor INTOLERANTE','NR-T':'No respondedor tolerante','NR-I':'No respondedor intolerante'};
+  var el = g('clasificacion-final'); if (!el) return;
+  el.innerHTML = '<div style="background:' + (colors[cat]||'#f5f5f5') + ';border-radius:8px;padding:12px;margin-bottom:8px"><div style="font-weight:600;font-size:15px">' + (texts[cat]||cat) + '</div>' + (razones.length ? '<div style="font-size:12px;margin-top:4px;opacity:0.8">' + razones.join(' · ') + '</div>' : '') + '</div><div style="font-size:12px;color:#6b7280">Respondedor: <strong>' + (resp||'—') + '</strong> &nbsp;|&nbsp; Intolerante: <strong>' + (intol?'Sí':'No') + '</strong></div>';
+}
+
+function resetForm() {
+  cur = {};
+  document.querySelectorAll('input').forEach(function(el){ el.value = ''; });
+  document.querySelectorAll('select').forEach(function(el){ el.value = ''; });
+  ['pcp-val','ppi_t0_val','ppi_t1_val','ppi_t2_val'].forEach(function(id){ txt(id, '— %'); });
+  txt('pcp-val', '— kg');
+  ['delta_vpp_val','delta_ppi_val'].forEach(function(id){ txt(id,'— puntos'); });
+  txt('delta_vti_val','— %');
+  txt('delta_ppi_post_val','— puntos');
+  htm('resp_tag',''); htm('resp_confirm_tag','');
+  txt('clasificacion-final','Completa los datos para ver la clasificación.');
+}
+
+function collectData() {
+  return { codigo:v('codigo'), fecha:new Date().toLocaleDateString('es-ES'), edad:v('edad'), sexo:v('sexo'), peso:v('peso'), altura:v('altura'), pcp:cur.pcp||'', diagnostico:v('diagnostico'), apache:v('apache'), sofa:v('sofa'), balance:v('balance'), cvc:v('cvc'), pam_t0:v('pam_t0'), fc_t0:v('fc_t0'), vpp_t0:v('vpp_t0'), pvc_t0:v('pvc_t0'), peep_t0:v('peep_t0'), fio2_t0:v('fio2_t0'), plateau_t0:v('plateau_t0'), dp_t0:v('dp_t0'), vmax_t0:v('vmax_t0'), vmin_t0:v('vmin_t0'), ppi_t0:cur.ppi_t0||'', vci_t0:v('vci_t0'), vh_t0:v('vh_t0'), vr_t0:v('vr_t0'), vexus_t0:v('vexus_t0'), tapse_t0:v('tapse_t0'), s_t0:v('s_t0'), fevi_t0:v('fevi_t0'), vti_t0:v('vti_t0'), ee_t0:v('ee_t0'), plateau_t1:v('plateau_t1'), dp_t1:v('dp_t1'), vpp_t1:v('vpp_t1'), delta_vpp:cur.delta_vpp||'', vmax_t1:v('vmax_t1'), vmin_t1:v('vmin_t1'), ppi_t1:cur.ppi_t1||'', delta_ppi_tvc:cur.delta_ppi_tvc||'', pam_t2:v('pam_t2'), vpp_t2:v('vpp_t2'), pvc_t2:v('pvc_t2'), vti_t2:v('vti_t2'), delta_vti:cur.delta_vti||'', vmax_t2:v('vmax_t2'), vmin_t2:v('vmin_t2'), ppi_t2:cur.ppi_t2||'', delta_ppi_post:cur.delta_ppi_post||'', vci_t2:v('vci_t2'), vh_t2:v('vh_t2'), vr_t2:v('vr_t2'), vexus_t2:v('vexus_t2'), respondedor:cur.respondedor||'', intolerante:cur.intolerante||'', categoria:cur.categoria||'' };
+}
+
+function exportExcel() {
+  if (patients.length === 0) { alert('No hay pacientes para exportar.'); return; }
+  var headers = ['Codigo','Fecha','Edad','Sexo','Peso','Altura','PCP_kg','Diagnostico','APACHE','SOFA','Balance_ml','CVC','PAM_T0','FC_T0','VPP_T0','PVC_T0','PEEP','FiO2','Plateau_T0','DP_T0','Vmax_T0','Vmin_T0','PPI_T0','VCI_T0','VH_T0','VR_T0','VExUS_T0','TAPSE','S_prima','FEVI','VTI_T0','EE','Plateau_T1','DP_T1','VPP_T1','Delta_VPP','Vmax_T1','Vmin_T1','PPI_T1','Delta_PPI_TVC','PAM_T2','VPP_T2','PVC_T2','VTI_T2','Delta_VTI','Vmax_T2','Vmin_T2','PPI_T2','Delta_PPI_post','VCI_T2','VH_T2','VR_T2','VExUS_T2','Respondedor','Intolerante','Categoria'];
+  var keys = ['codigo','fecha','edad','sexo','peso','altura','pcp','diagnostico','apache','sofa','balance','cvc','pam_t0','fc_t0','vpp_t0','pvc_t0','peep_t0','fio2_t0','plateau_t0','dp_t0','vmax_t0','vmin_t0','ppi_t0','vci_t0','vh_t0','vr_t0','vexus_t0','tapse_t0','s_t0','fevi_t0','vti_t0','ee_t0','plateau_t1','dp_t1','vpp_t1','delta_vpp','vmax_t1','vmin_t1','ppi_t1','delta_ppi_tvc','pam_t2','vpp_t2','pvc_t2','vti_t2','delta_vti','vmax_t2','vmin_t2','ppi_t2','delta_ppi_post','vci_t2','vh_t2','vr_t2','vexus_t2','respondedor','intolerante','categoria'];
+  var rows = [headers].concat(patients.map(function(p){ return keys.map(function(k){ return p[k]||''; }); }));
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = headers.map(function(){ return {wch:14}; });
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Datos PPI-TVC');
+  XLSX.writeFile(wb, 'PPI_TVC_Negrin_' + new Date().toISOString().slice(0,10) + '_n' + patients.length + '.xlsx');
+}
+
+function on(id, ev, fn) { var el = g(id); if (el) el.addEventListener(ev, fn); }
+
+window.addEventListener('DOMContentLoaded', function(){
+  loadData(); updateStats();
+
+  on('peso','input',calcPCP); on('altura','input',calcPCP); on('sexo','change',calcPCP);
+  on('vmax_t0','input',function(){ calcPPI('t0'); }); on('vmin_t0','input',function(){ calcPPI('t0'); });
+  on('vmax_t1','input',function(){ calcPPI('t1'); }); on('vmin_t1','input',function(){ calcPPI('t1'); });
+  on('vmax_t2','input',function(){ calcPPI('t2'); }); on('vmin_t2','input',function(){ calcPPI('t2'); });
+  on('vpp_t0','input',calcDeltaVPP); on('vpp_t1','input',calcDeltaVPP);
+  on('vti_t2','input',calcDeltaVTI);
+  on('vexus_t2','change',calcClasificacion);
+
+  on('btn-nuevo','click',function(){ resetForm(); goTo(1); });
+  on('btn-export','click',exportExcel);
+  on('btn-lista','click',function(){
+    var sec = g('patient-list-section'), list = g('patient-list'); if (!sec||!list) return;
+    var vis = sec.style.display !== 'none'; sec.style.display = vis ? 'none' : 'block';
+    if (!vis) {
+      var cc = {'R-T':'#EAF3DE','R-I':'#FFE6CC','NR-T':'#FFF9C4','NR-I':'#FCEBEB'};
+      var ct = {'R-T':'#27500A','R-I':'#7C2D12','NR-T':'#78350F','NR-I':'#791F1F'};
+      list.innerHTML = patients.length === 0 ? '<p style="font-size:13px;color:#6b7280">No hay pacientes.</p>' : patients.map(function(p){ return '<div class="patient-item"><div class="pid">'+(p.codigo||'Sin código')+' · '+(p.fecha||'')+'</div><div class="pinfo">'+(p.sexo||'—')+', '+(p.edad||'—')+' años · Delta PPI TVC: <strong>'+(p.delta_ppi_tvc||'—')+' pts</strong> · VPP: <strong>'+(p.delta_vpp||'—')+' pts</strong></div><span class="cat-badge" style="background:'+(cc[p.categoria]||'#f5f5f5')+';color:'+(ct[p.categoria]||'#333')+'">'+(p.categoria||'—')+'</span></div>'; }).join('');
+    }
+  });
+  on('btn-borrar','click',function(){
+    if (!confirm('¿Borrar TODOS los datos? Exporta a Excel antes.')) return;
+    patients = []; try { localStorage.removeItem('ppi_tvc_v1'); } catch(e){}
+    updateStats(); var s = g('patient-list-section'); if (s) s.style.display = 'none';
+    alert('Datos borrados.');
+  });
+
+  on('btn-1-next','click',function(){ goTo(2); });
+  on('btn-1-back','click',function(){ goTo(0); });
+  on('btn-2-next','click',function(){ goTo(3); });
+  on('btn-2-back','click',function(){ goTo(1); });
+  on('btn-3-next','click',function(){ goTo(4); });
+  on('btn-3-back','click',function(){ goTo(2); });
+  on('btn-4-back','click',function(){ goTo(3); });
+  on('btn-guardar','click',function(){
+    if (!v('codigo')) { alert('Introduce el código del paciente.'); return; }
+    var data = collectData(); patients.push(data); saveData(); updateStats();
+    alert('Paciente ' + data.codigo + ' guardado. Total: ' + patients.length);
+    resetForm(); goTo(0);
+  });
+
+  goTo(0);
+});
+</script>
+</body>
+</html>
